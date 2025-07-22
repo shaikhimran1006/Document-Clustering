@@ -42,11 +42,6 @@ Using all four offers broader understanding of topic coherence, keyword separati
 
 ---
 
-## 📁 Project Structur
-
-
----
-
 ---
 
 ## 📸 Output & UI
