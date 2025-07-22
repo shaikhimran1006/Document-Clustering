@@ -10,7 +10,7 @@ from gensim import corpora
 from wordcloud import WordCloud
 import plotly.graph_objects as go
 
-# Load models
+# ------------------ Load Models ------------------
 kmeans_model = joblib.load("models/KMeans/kmeans_model_10_clusters.joblib")
 lda_model = LdaModel.load("models/LDA/lda_model_10_topics.gensim")
 dictionary = corpora.Dictionary.load("models/LDA/lda_dictionary.gensim")
@@ -20,7 +20,7 @@ nmf_vectorizer = joblib.load("models/NMF/nmf_vectorizer.joblib")
 agglo_model = joblib.load("models/Agglomerative/agglomerative_model.pkl")
 agglo_vectorizer = joblib.load("models/Agglomerative/vectorizer_agglomerative.pkl")
 
-# Label mappings
+# ------------------ Label Mappings ------------------
 cluster_names = {
     0: "Sports (Hockey & Baseball)",
     1: "Space & NASA",
@@ -70,7 +70,7 @@ nmf_topic_names = {
     9: "Christian Beliefs"
 }
 
-# Preprocessing
+# ------------------ Preprocessing ------------------
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
@@ -80,22 +80,24 @@ def preprocess(text):
     tokens = word_tokenize(text)
     return [lemmatizer.lemmatize(w) for w in tokens if w not in stop_words and len(w) > 2]
 
+# ------------------ Visualization ------------------
 def show_wordcloud(words, title):
-    wordcloud = WordCloud(background_color='black').generate(" ".join(words))
+    wordcloud = WordCloud(background_color='white').generate(" ".join(words))
     st.image(wordcloud.to_array(), caption=title, use_container_width=True)
 
 def donut_chart(words, weights, title):
     fig = go.Figure(data=[go.Pie(labels=words, values=weights, hole=.4)])
-    fig.update_layout(title_text=title)
+    fig.update_layout(title_text=title, template="plotly_white")
     st.plotly_chart(fig, use_container_width=True)
 
-# UI
+# ------------------ UI Layout ------------------
 st.set_page_config(page_title="Topic Modeling Comparator", layout="wide")
-st.title("📚 Topic Modeling Comparator - KMeans, LDA, Agglomerative, NMF")
+st.title("📚 Topic Modeling Comparator")
 
 user_input = st.text_area("✍️ Enter document text here:", height=200)
 option = st.radio("Choose a model:", ["KMeans", "LDA", "Agglomerative", "NMF", "Compare All"], horizontal=True)
 
+# ------------------ Prediction ------------------
 if st.button("🔍 Predict"):
     if not user_input.strip():
         st.warning("⚠️ Please enter some text.")
@@ -104,33 +106,34 @@ if st.button("🔍 Predict"):
         clean_text = " ".join(tokens)
 
         if option in ["KMeans", "Compare All"]:
-            st.subheader("🔹 KMeans Result")
+            st.markdown("### 🔹 KMeans Result")
             vec = tfidf_vectorizer.transform([clean_text])
             cid = kmeans_model.predict(vec)[0]
             label = cluster_names.get(cid, f"Cluster {cid}")
-            st.success(f"📌 KMeans: **{label}**")
+            st.success(f"📌 **KMeans Prediction:** {label}")
             terms = tfidf_vectorizer.get_feature_names_out()
             top_idx = kmeans_model.cluster_centers_[cid].argsort()[::-1][:10]
             top_words = [terms[i] for i in top_idx]
             weights = kmeans_model.cluster_centers_[cid][top_idx]
-            st.write("🔑 Top Keywords:", ", ".join(top_words))
+            st.markdown(f"🔑 **Top Keywords:** `{', '.join(top_words)}`")
             col1, col2 = st.columns(2)
             with col1:
                 show_wordcloud(top_words, "KMeans WordCloud")
             with col2:
                 donut_chart(top_words, weights, "KMeans Top Keywords")
+            st.markdown("---")
 
         if option in ["LDA", "Compare All"]:
-            st.subheader("🔹 LDA Result")
+            st.markdown("### 🔹 LDA Result")
             bow = dictionary.doc2bow(tokens)
             lda_topics = lda_model.get_document_topics(bow)
             if lda_topics:
                 tid, _ = max(lda_topics, key=lambda x: x[1])
                 label = lda_topic_names.get(tid, f"Topic {tid}")
-                st.success(f"🧠 LDA: **{label}**")
+                st.success(f"🧠 **LDA Prediction:** {label}")
                 topic_words = lda_model.show_topic(tid, topn=10)
                 words, weights = zip(*topic_words)
-                st.write("🔑 Top Keywords:", ", ".join(words))
+                st.markdown(f"🔑 **Top Keywords:** `{', '.join(words)}`")
                 col1, col2 = st.columns(2)
                 with col1:
                     show_wordcloud(words, "LDA WordCloud")
@@ -138,38 +141,41 @@ if st.button("🔍 Predict"):
                     donut_chart(words, weights, "LDA Top Keywords")
             else:
                 st.warning("⚠️ LDA couldn't assign a topic.")
+            st.markdown("---")
 
         if option in ["Agglomerative", "Compare All"]:
-            st.subheader("🔹 Agglomerative Result")
+            st.markdown("### 🔹 Agglomerative Result")
             vec = agglo_vectorizer.transform([clean_text])
             cid = agglo_model.predict(vec.toarray())[0]
             label = agglo_cluster_names.get(cid, f"Cluster {cid}")
-            st.success(f"📎 Agglomerative: **{label}**")
+            st.success(f"📎 **Agglomerative Prediction:** {label}")
             terms = agglo_vectorizer.get_feature_names_out()
             cluster_weights = agglo_model.centroids_[cid]
             top_idx = cluster_weights.argsort()[::-1][:10]
             top_words = [terms[i] for i in top_idx]
             weights = cluster_weights[top_idx]
-            st.write("🔑 Top Keywords:", ", ".join(top_words))
+            st.markdown(f"🔑 **Top Keywords:** `{', '.join(top_words)}`")
             col1, col2 = st.columns(2)
             with col1:
                 show_wordcloud(top_words, "Agglomerative WordCloud")
             with col2:
                 donut_chart(top_words, weights, "Agglomerative Top Keywords")
+            st.markdown("---")
 
         if option in ["NMF", "Compare All"]:
-            st.subheader("🔹 NMF Result")
+            st.markdown("### 🔹 NMF Result")
             vec = nmf_vectorizer.transform([clean_text])
             topic_dist = nmf_model.transform(vec)
             tid = np.argmax(topic_dist)
             label = nmf_topic_names.get(tid, f"Topic {tid}")
-            st.success(f"🔬 NMF: **{label}**")
+            st.success(f"🔬 **NMF Prediction:** {label}")
             top_idx = nmf_model.components_[tid].argsort()[::-1][:10]
             top_words = [nmf_vectorizer.get_feature_names_out()[i] for i in top_idx]
             weights = nmf_model.components_[tid][top_idx]
-            st.write("🔑 Top Keywords:", ", ".join(top_words))
+            st.markdown(f"🔑 **Top Keywords:** `{', '.join(top_words)}`")
             col1, col2 = st.columns(2)
             with col1:
                 show_wordcloud(top_words, "NMF WordCloud")
             with col2:
                 donut_chart(top_words, weights, "NMF Top Keywords")
+            st.markdown("---")
