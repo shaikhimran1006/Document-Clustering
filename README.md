@@ -127,7 +127,7 @@ streamlit run app/main.py
 
 ## 📢 About the Internship
 
-This project is developed as part of my **Summer Internship at [Celebal Technologies](https://www.celebaltech.com/)**, under the mentorship of the **Data Science** and **Center for Smart Infrastructure (CSI)** team.
+This project is developed as part of my **Summer Internship at [Celebal Technologies](https://www.celebaltech.com/)**, under the mentorship of the **Data Science** and **(CSI)** team.
 
 ### 👨‍💻 What I Learned
 
